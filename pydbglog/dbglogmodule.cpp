@@ -15,7 +15,7 @@
 
 namespace python = boost::python;
 
-namespace py {
+namespace dbglog { namespace py {
 
 python::object extractStack;
 const std::string empty = std::string();
@@ -60,10 +60,6 @@ bool log(dbglog::level level, const std::string &prefix
 
     return res;
 }
-
-} // namespace py
-
-namespace py {
 
 #define LOG_FUNCTION(PREFIX, LEVEL)                                     \
     python::object LEVEL(python::tuple args, python::dict kwargs) {     \
@@ -156,10 +152,6 @@ private:
     LOG_FUNCTION(fatal)
 
 #undef LOG_FUNCTION
-
-} // namespace py
-
-namespace py {
 
 class thrower {
 public:
@@ -266,10 +258,6 @@ python::object module::throw_(python::object excType)
     return python::object(module_thrower(*this, excType));
 }
 
-}
-
-namespace py {
-
 void set_mask(python::str &m)
 {
     using namespace python;
@@ -328,13 +316,14 @@ void thread_id(python::str value)
     dbglog::thread_id(python::extract<std::string>(value)());
 }
 
-} // namespace py
+} } // namespace dbglog::py
 
 /** Python bindings.
  */
 BOOST_PYTHON_MODULE(dbglog)
 {
     using namespace python;
+    namespace py = dbglog::py;
 
 #define LOG_FUNCTION(LEVEL) \
     def(#LEVEL, raw_function(py::LEVEL, 1))
@@ -456,5 +445,20 @@ BOOST_PYTHON_MODULE(dbglog)
         ;
 #undef LOG_FUNCTION
 
-    ::py::extractStack = import("traceback").attr("extract_stack");
+    py::extractStack = import("traceback").attr("extract_stack");
 }
+
+
+namespace dbglog { namespace py {
+
+boost::python::object import()
+{
+    static bool imported(false);
+    if (!imported) {
+        initdbglog();
+        imported = true;
+    }
+    return boost::python::import("dbglog");
+}
+
+} } // namespace dbglog::py
