@@ -51,7 +51,7 @@ bool log(dbglog::level level, const std::string &prefix
 
     python::object res(dbglog::detail::deflog.prefix_log
                        (level, prefix, extract<const char *>(msg)()
-                        , dbglog::location(file, func, lineno)));
+                        , dbglog::location(file, func, lineno, true)));
 
     if (logHook) {
         logHook(python::object(dbglog::detail::level2string(level))
