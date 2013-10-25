@@ -32,13 +32,13 @@ void log_hook(python::object hook)
     logHook = hook;
 }
 
-bool log(dbglog::level level, const std::string &prefix
-         , python::tuple args, python::dict kwargs)
+python::object log(dbglog::level level, const std::string &prefix
+                   , python::tuple args, python::dict kwargs)
 {
     using namespace python;
 
     if (!dbglog::detail::deflog.check_level(level)) {
-        return false;
+        return object(false);
     }
 
     object frame(extractStack(object(), 1)[0]);
@@ -47,7 +47,16 @@ bool log(dbglog::level level, const std::string &prefix
     const char *func = extract<const char *>(frame[2])();
     size_t lineno = extract<size_t>(frame[1])();
 
-    str msg(args[0].attr("format")(*(args[slice(1,_)]), **kwargs));
+    // ensure string is in unicode
+    object fs(args[0]);
+    if (!PyUnicode_Check(fs.ptr())) {
+        fs = fs.attr("decode")("utf-8");
+        if (!fs) { return fs; }
+    }
+
+    str msg(fs.attr("format")(*(args[slice(1,_)]), **kwargs)
+            .attr("encode")("utf-8"));
+    if (!msg) { return msg; }
 
     python::object res(dbglog::detail::deflog.prefix_log
                        (level, prefix, extract<const char *>(msg)()
@@ -63,7 +72,7 @@ bool log(dbglog::level level, const std::string &prefix
 
 #define LOG_FUNCTION(PREFIX, LEVEL)                                     \
     python::object LEVEL(python::tuple args, python::dict kwargs) {     \
-        return python::object(log(dbglog::LEVEL, PREFIX, args, kwargs)); \
+        return log(dbglog::LEVEL, PREFIX, args, kwargs);                \
     }
 
     LOG_FUNCTION(empty, debug)
@@ -168,6 +177,7 @@ private:
     python::object excType_;
 };
 
+// FIXME: use unicode as well
 #define LOG_FUNCTION(LEVEL)                                             \
     python::object throw_##LEVEL(python::tuple args                     \
                                  , python::dict kwargs)                 \
@@ -223,6 +233,7 @@ private:
     python::object excType_;
 };
 
+// FIXME: use unicode as well
 #define LOG_FUNCTION(LEVEL)                                             \
     python::object module_throw_##LEVEL(python::tuple args              \
                                         , python::dict kwargs)          \
@@ -313,7 +324,8 @@ python::str thread_id()
 
 void thread_id(python::str value)
 {
-    dbglog::thread_id(python::extract<std::string>(value)());
+    dbglog::thread_id(python::extract<std::string>
+                      (value.attr("encode")("utf-8"))());
 }
 
 } } // namespace dbglog::py
