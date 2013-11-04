@@ -5,6 +5,7 @@
 #include <boost/make_shared.hpp>
 
 #include <boost/python.hpp>
+#include <boost/python/stl_iterator.hpp>
 #include <boost/python/raw_function.hpp>
 #include <boost/python/slice.hpp>
 #include <boost/python/call.hpp>
@@ -32,6 +33,34 @@ void log_hook(python::object hook)
     logHook = hook;
 }
 
+namespace {
+
+    using namespace boost::python;
+
+class Stringizer {
+public:
+    Stringizer(object obj)
+        : obj_(obj)
+    {
+    }
+
+    object format(object spec) {
+        object res(obj_.attr("__format__")(spec));
+
+        if (PyUnicode_Check(res.ptr())) {
+            return res.attr("encode")("utf-8");
+        }
+        return res;
+    }
+
+private:
+    object obj_;
+};
+
+object StringizerClass;
+
+} // namespace
+
 python::object log(dbglog::level level, const std::string &prefix
                    , python::tuple args, python::dict kwargs)
 {
@@ -47,16 +76,28 @@ python::object log(dbglog::level level, const std::string &prefix
     const char *func = extract<const char *>(frame[2])();
     size_t lineno = extract<size_t>(frame[1])();
 
-    // ensure string is in unicode
-    object fs(args[0]);
-    if (!PyUnicode_Check(fs.ptr())) {
-        fs = fs.attr("decode")("utf-8");
-        if (!fs) { return fs; }
+    // TODO: use simple wrapper around elements
+
+    object fstr;
+    list fargs;
+
+    for (stl_input_iterator<object> iargs(args), eargs;
+         iargs != eargs; ++iargs)
+    {
+        if (!fstr) {
+            if (PyUnicode_Check(iargs->ptr())) {
+                fstr = iargs->attr("encode")("utf-8");
+            } else {
+                fstr = *iargs;
+            }
+        } else {
+            fargs.append(StringizerClass(*iargs));
+        }
     }
 
-    str msg(fs.attr("format")(*(args[slice(1,_)]), **kwargs)
-            .attr("encode")("utf-8"));
-    if (!msg) { return msg; }
+    // TODO: wrap kwargs
+
+    str msg(fstr.attr("format")(*fargs, **kwargs));
 
     python::object res(dbglog::detail::deflog.prefix_log
                        (level, prefix, extract<const char *>(msg)()
@@ -456,6 +497,11 @@ BOOST_PYTHON_MODULE(dbglog)
         .LOG_FUNCTION(fatal)
         ;
 #undef LOG_FUNCTION
+
+    py::StringizerClass = class_<py::Stringizer>
+        ("Stringizer", init<object>())
+        .def("__format__", &py::Stringizer::format)
+        ;
 
     py::extractStack = import("traceback").attr("extract_stack");
 }
