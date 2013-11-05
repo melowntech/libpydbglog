@@ -33,19 +33,18 @@ void log_hook(python::object hook)
     logHook = hook;
 }
 
-namespace {
+namespace format {
 
-    using namespace boost::python;
+using namespace boost::python;
 
-class Stringizer {
+class FormatProxy {
 public:
-    Stringizer(object obj)
-        : obj_(obj)
-    {
-    }
+    FormatProxy(object arg)
+        : format_(arg.attr("__format__"))
+    {}
 
     object format(object spec) {
-        object res(obj_.attr("__format__")(spec));
+        object res(format_(spec));
 
         if (PyUnicode_Check(res.ptr())) {
             return res.attr("encode")("utf-8");
@@ -54,12 +53,61 @@ public:
     }
 
 private:
-    object obj_;
+    object format_;
 };
 
-object StringizerClass;
+object FormatProxyClass;
 
-} // namespace
+/** Wraps positional arguments but ignores the first one (this works like
+ *  working on args_[1:] slice.
+ */
+class ArgsWrapper {
+public:
+    ArgsWrapper(object args)
+        : args_(args)
+    {}
+
+    long len() {
+        auto l(python::len(args_));
+        if (l) { return l - 1; }
+        return l;
+    }
+
+    object getitem(object i) {
+        return FormatProxyClass(object(args_[i + 1]));
+    }
+
+private:
+    object args_;
+};
+
+object ArgsWrapperClass;
+
+class KwArgsWrapper {
+public:
+    KwArgsWrapper(object args)
+        : args_(args)
+    {}
+
+    object keys() {
+        return args_.attr("keys")();
+    }
+
+    long len() {
+        return python::len(args_);
+    }
+
+    object getitem(object key) {
+        return FormatProxyClass(object(args_[key]));
+    }
+
+private:
+    object args_;
+};
+
+object KwArgsWrapperClass;
+
+} // namespace format
 
 python::object log(dbglog::level level, const std::string &prefix
                    , python::tuple args, python::dict kwargs)
@@ -76,28 +124,15 @@ python::object log(dbglog::level level, const std::string &prefix
     const char *func = extract<const char *>(frame[2])();
     size_t lineno = extract<size_t>(frame[1])();
 
-    // TODO: use simple wrapper around elements
 
-    object fstr;
-    list fargs;
-
-    for (stl_input_iterator<object> iargs(args), eargs;
-         iargs != eargs; ++iargs)
-    {
-        if (!fstr) {
-            if (PyUnicode_Check(iargs->ptr())) {
-                fstr = iargs->attr("encode")("utf-8");
-            } else {
-                fstr = *iargs;
-            }
-        } else {
-            fargs.append(StringizerClass(*iargs));
-        }
+    // get format string
+    object fstr(args[0]);
+    if (PyUnicode_Check(fstr.ptr())) {
+        fstr = fstr.attr("encode")("utf-8");
     }
 
-    // TODO: wrap kwargs
-
-    str msg(fstr.attr("format")(*fargs, **kwargs));
+    str msg(fstr.attr("format")(*format::ArgsWrapperClass(args)
+                                , **format::KwArgsWrapperClass(kwargs)));
 
     python::object res(dbglog::detail::deflog.prefix_log
                        (level, prefix, extract<const char *>(msg)()
@@ -498,9 +533,22 @@ BOOST_PYTHON_MODULE(dbglog)
         ;
 #undef LOG_FUNCTION
 
-    py::StringizerClass = class_<py::Stringizer>
-        ("Stringizer", init<object>())
-        .def("__format__", &py::Stringizer::format)
+    py::format::ArgsWrapperClass = class_<py::format::ArgsWrapper>
+        ("ArgsWrapper", init<object>())
+        .def("__len__", &py::format::ArgsWrapper::len)
+        .def("__getitem__", &py::format::ArgsWrapper::getitem)
+        ;
+
+    py::format::KwArgsWrapperClass = class_<py::format::KwArgsWrapper>
+        ("KwArgsWrapper", init<object>())
+        .def("keys", &py::format::KwArgsWrapper::keys)
+        .def("__len__", &py::format::KwArgsWrapper::len)
+        .def("__getitem__", &py::format::KwArgsWrapper::getitem)
+        ;
+
+    py::format::FormatProxyClass = class_<py::format::FormatProxy>
+        ("ArgProxy", init<object>())
+        .def("__format__", &py::format::FormatProxy::format)
         ;
 
     py::extractStack = import("traceback").attr("extract_stack");
