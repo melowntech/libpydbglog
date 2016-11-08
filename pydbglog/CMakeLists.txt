@@ -29,7 +29,7 @@ else()
     PREFIX "")
 
   if (PYDBGLOG_INSTALL)
-    install(TARGETS dbglogmodule LIBRARY DESTINATION lib
+    install(TARGETS dbglogmodule LIBRARY DESTINATION lib/python${PYTHON_VERSION}
       COMPONENT main)
   endif()
 endif()
