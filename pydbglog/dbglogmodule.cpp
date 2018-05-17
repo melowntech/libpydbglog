@@ -71,9 +71,11 @@ public:
     object format(object spec) {
         object res(format_(spec));
 
+#if PY_MAJOR_VERSION == 2
         if (PyUnicode_Check(res.ptr())) {
             return res.attr("encode")("utf-8");
         }
+#endif
         return res;
     }
 
@@ -152,9 +154,11 @@ python::object log(dbglog::level level, const std::string &prefix
 
     // get format string
     object fstr(args[0]);
+#if PY_MAJOR_VERSION == 2
     if (PyUnicode_Check(fstr.ptr())) {
         fstr = fstr.attr("encode")("utf-8");
     }
+#endif
 
     str msg(fstr.attr("format")(*format::ArgsWrapperClass(args)
                                 , **format::KwArgsWrapperClass(kwargs)));
@@ -595,5 +599,12 @@ boost::python::object import()
     }
     return boost::python::import("dbglog");
 }
+
+// introduce initdbglog() entry point for standalone module
+#if (PY_MAJOR_VERSION > 2) && !PYTHON_STATIC
+extern "C" {
+void initdbglog() { init_module_dbglog(); }
+} // extern "C"
+#endif
 
 } } // namespace dbglog::py
