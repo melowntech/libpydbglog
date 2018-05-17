@@ -37,7 +37,7 @@
 
 #include <stdint.h>
 
-#include <dbglog/dbglog.hpp>
+#include "dbglog/dbglog.hpp"
 
 namespace python = boost::python;
 
@@ -586,7 +586,11 @@ boost::python::object import()
 {
     static bool imported(false);
     if (!imported) {
+#if PY_MAJOR_VERSION == 2
         initdbglog();
+#else
+        init_module_dbglog();
+#endif
         imported = true;
     }
     return boost::python::import("dbglog");

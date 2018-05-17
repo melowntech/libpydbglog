@@ -1,4 +1,7 @@
-define_module(LIBRARY pydbglog
+# bump version here
+set(pydbglog_VERSION 1.0)
+
+define_module(LIBRARY pydbglog=${pydbglog_VERSION}
   DEPENDS
   dbglog Boost_THREAD Boost_SYSTEM Boost_PYTHON PYTHONLIBS)
 
