@@ -13,7 +13,6 @@ if(PYDBGLOG_STATIC)
   add_library(pydbglog STATIC ${pydbglog_SOURCES})
   buildsys_library(pydbglog)
   target_link_libraries(pydbglog ${MODULE_LIBRARIES})
-  target_compile_definitions(pydbglog PRIVATE PYDBGLOG_STATIC=1)
 
 else()
   # module
@@ -26,7 +25,6 @@ else()
   add_library(dbglogmodule MODULE ${dbglogmodule_SOURCES})
 
   target_link_libraries(dbglogmodule ${MODULE_LIBRARIES})
-  target_compile_definitions(dbglogmodule PRIVATE PYDBGLOG_STATIC=0)
 
   # update name to suit python
   set_target_properties(dbglogmodule PROPERTIES

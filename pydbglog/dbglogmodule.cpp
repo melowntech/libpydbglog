@@ -25,6 +25,7 @@
  */
 #include <string>
 #include <vector>
+#include <mutex>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
@@ -583,28 +584,27 @@ BOOST_PYTHON_MODULE(dbglog)
     py::extractStack = import("traceback").attr("extract_stack");
 }
 
-
 namespace dbglog { namespace py {
+
+namespace {
+std::once_flag onceFlag;
+} // namespace
 
 boost::python::object import()
 {
-    static bool imported(false);
-    if (!imported) {
+    std::call_once(onceFlag, [&]()
+    {
 #if PY_MAJOR_VERSION == 2
         initdbglog();
 #else
-        init_module_dbglog();
+        typedef python::handle< ::PyObject> Handle;
+        Handle module(PyInit_dbglog());
+        auto sys(python::import("sys"));
+        sys.attr("modules")["dbglog"] = module;
 #endif
-        imported = true;
-    }
+    });
+
     return boost::python::import("dbglog");
 }
-
-// introduce initdbglog() entry point for standalone module
-#if (PY_MAJOR_VERSION > 2) && !PYTHON_STATIC
-extern "C" {
-void initdbglog() { init_module_dbglog(); }
-} // extern "C"
-#endif
 
 } } // namespace dbglog::py
