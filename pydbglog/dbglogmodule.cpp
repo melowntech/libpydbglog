@@ -418,6 +418,11 @@ void log_console(bool value)
     return dbglog::log_console(value);
 }
 
+bool get_log_console()
+{
+    return dbglog::get_log_console();
+}
+
 bool log_file(const std::string &filename)
 {
     return dbglog::log_file(filename);
@@ -500,11 +505,12 @@ BOOST_PYTHON_MODULE(dbglog)
 
     FUNCTION_PAIR(log_thread);
     FUNCTION_PAIR(log_pid);
-    FUNCTION_PAIR(log_console);
+    def<void()>("log_console", py::log_console);
+    def<void(bool)>("log_console", py::log_console);
+    def("get_log_console", py::get_log_console);
 
 #undef FUNCTION_PAIR
 
-    def("log_file", &py::log_file);
     def("log_file", &py::log_file);
 
     typedef void (*void_object_function)(python::object);
