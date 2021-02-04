@@ -44,7 +44,8 @@ namespace python = boost::python;
 
 namespace dbglog { namespace py {
 
-python::object extractStack;
+PyObject *extractStack;
+
 const std::string empty = std::string();
 
 python::object logHook = python::object();
@@ -146,12 +147,11 @@ python::object log(dbglog::level level, const std::string &prefix
         return object(false);
     }
 
-    object frame(extractStack(object(), 1)[0]);
+    object frame(python::call<python::object>(extractStack, object(), 1)[0]);
 
     const char *file = extract<const char *>(frame[0])();
     const char *func = extract<const char *>(frame[2])();
     size_t lineno = extract<size_t>(frame[1])();
-
 
     // get format string
     object fstr(args[0]);
@@ -587,7 +587,14 @@ BOOST_PYTHON_MODULE(dbglog)
         .def("__format__", &py::format::FormatProxy::format)
         ;
 
-    py::extractStack = import("traceback").attr("extract_stack");
+    // get traceback.extract_stack;
+    object es(import("traceback").attr("extract_stack"));
+
+    // hold it in this module
+    python::scope().attr("_extract_stack") = es;
+
+    // and get pointer to it so functionas can use it
+    py::extractStack = es.ptr();
 }
 
 namespace dbglog { namespace py {

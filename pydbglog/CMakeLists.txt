@@ -6,6 +6,10 @@ define_module(LIBRARY pydbglog=${pydbglog_VERSION}
   dbglog Boost_THREAD Boost_SYSTEM Boost_PYTHON PYTHONLIBS)
 
 if(PYDBGLOG_STATIC)
+  define_module(LIBRARY pydbglog=${pydbglog_VERSION}
+    DEPENDS
+    dbglog Boost_THREAD Boost_SYSTEM Boost_PYTHON PYTHONLIBS)
+  
   set(pydbglog_SOURCES
     dbglogmodule.cpp
     )
@@ -15,6 +19,10 @@ if(PYDBGLOG_STATIC)
   target_link_libraries(pydbglog ${MODULE_LIBRARIES})
 
 else()
+  define_module(LIBRARY pydbglog=${pydbglog_VERSION}
+    DEPENDS
+    dbglog Boost_THREAD Boost_SYSTEM Boost_PYTHON)
+
   # module
   buildsys_position_independent(${MODULE_LIBRARIES})
 
