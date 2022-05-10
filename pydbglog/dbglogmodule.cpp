@@ -36,6 +36,11 @@
 #include <boost/python/slice.hpp>
 #include <boost/python/call.hpp>
 
+#ifdef _WIN32
+#undef vsnprintf
+#undef snprintf
+#endif
+
 #include <stdint.h>
 
 #include "dbglog/dbglog.hpp"
