@@ -3,13 +3,11 @@ set(pydbglog_VERSION 1.0)
 
 define_module(LIBRARY pydbglog=${pydbglog_VERSION}
   DEPENDS
-  pysupport>=1.5
   dbglog Boost_THREAD Boost_SYSTEM Boost_PYTHON PYTHONLIBS)
 
 if(PYDBGLOG_STATIC)
   define_module(LIBRARY pydbglog=${pydbglog_VERSION}
     DEPENDS
-    pysupport>=1.5
     dbglog Boost_THREAD Boost_SYSTEM Boost_PYTHON PYTHONLIBS)
   
   set(pydbglog_SOURCES
@@ -23,7 +21,6 @@ if(PYDBGLOG_STATIC)
 else()
   define_module(LIBRARY pydbglog=${pydbglog_VERSION}
     DEPENDS
-    pysupport>=1.5
     dbglog Boost_THREAD Boost_SYSTEM Boost_PYTHON)
 
   # module
