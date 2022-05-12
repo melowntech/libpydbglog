@@ -26,6 +26,7 @@
 #ifndef shared_dbglog_python_dbglogmodule_hpp_included_
 #define shared_dbglog_python_dbglogmodule_hpp_included_
 
+#include <pysupport/boost-python-definitions.hpp>
 #include <boost/python/object.hpp>
 
 namespace dbglog { namespace py {

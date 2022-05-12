@@ -23,6 +23,9 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+
+#include "dbglog/dbglog.hpp"
+
 #include <string>
 #include <vector>
 #include <mutex>
@@ -36,14 +39,8 @@
 #include <boost/python/slice.hpp>
 #include <boost/python/call.hpp>
 
-#ifdef _WIN32
-#undef vsnprintf
-#undef snprintf
-#endif
-
 #include <stdint.h>
 
-#include "dbglog/dbglog.hpp"
 
 namespace python = boost::python;
 
