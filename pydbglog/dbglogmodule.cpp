@@ -23,6 +23,21 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+
+#include "dbglog/dbglog.hpp"
+
+#ifdef _WIN32
+// Use only release version of python for Windows build
+// Release version of python is linked instead in buildsys
+#ifdef _DEBUG
+#undef _DEBUG
+#include <Python.h>
+#define _DEBUG
+#else
+#include <Python.h>
+#endif
+#endif
+
 #include <string>
 #include <vector>
 #include <mutex>
@@ -38,7 +53,6 @@
 
 #include <stdint.h>
 
-#include "dbglog/dbglog.hpp"
 
 namespace python = boost::python;
 
