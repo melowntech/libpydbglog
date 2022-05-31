@@ -30,6 +30,7 @@
 // Use only release version of python for Windows build
 // Release version of python is linked instead in buildsys
 #ifdef _DEBUG
+#include <corecrt.h>
 #undef _DEBUG
 #include <Python.h>
 #define _DEBUG
